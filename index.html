@@ -1,268 +1,1423 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>CPR VR Trainer - Research Edition</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    
-    <style>
-      :root {
-        --primary-gradient: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
-        --accent: #00f2fe;
-        --glass: rgba(255, 255, 255, 0.1);
-      }
-      body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #000; overflow: hidden; }
-      
-      .overlay-page {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: var(--primary-gradient); z-index: 3000;
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        color: white; text-align: center; transition: 0.8s ease-in-out;
-      }
-      
-      .glass-card {
-        background: var(--glass); backdrop-filter: blur(20px);
-        border-radius: 35px; padding: 30px; width: 85%; max-width: 450px;
-        border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 25px 50px rgba(0,0,0,0.6);
-      }
-      
-      .how-to-use {
-        text-align: left; background: rgba(0,0,0,0.3); padding: 15px;
-        border-radius: 15px; margin: 20px 0; font-size: 0.9rem; line-height: 1.4;
-      }
-      .how-to-use b { color: var(--accent); }
-      
-      .btn-main {
-        background: #fff; color: #1e3c72; padding: 18px 50px; border: none;
-        border-radius: 50px; font-weight: bold; font-size: 1.2rem; cursor: pointer;
-        transition: 0.3s;
-      }
-      
-      #finish-page { display: none; opacity: 0; }
-    </style>
-  </head>
- 
-  <body>
-    <div id="landing-page" class="overlay-page">
-      <div class="glass-card">
-        <h1>CPR VR MISSION</h1>
-        <p>Immersive Training Simulation</p>
-        <div class="how-to-use">
-          <p><b>1. Audio:</b> Turn up your volume.</p>
-          <p><b>2. Enter VR:</b> Click the VR icon at the bottom right.</p>
-          <p><b>3. Interact:</b> Use your controllers or gaze to click 3D buttons.</p>
-        </div>
-        <button class="btn-main" onclick="initExperience()">START SESSION</button>
-      </div>
-    </div>
- 
-    <div id="finish-page" class="overlay-page">
-      <div class="glass-card">
-        <h1 style="color: #00ff88;">MISSION COMPLETE</h1>
-        <p>You have mastered the CPR cycle effectively.</p>
-        <button class="btn-main" onclick="location.reload()">RESTART</button>
-      </div>
-    </div>
- 
-    <a-scene vr-mode-ui="enabled: true" cursor="rayOrigin: mouse">
-      <a-assets>
-        <img id="cpr-hands" src="hands.png">
-      </a-assets>
- 
-      <a-sky color="#121212"></a-sky>
-      <a-plane position="0 0 0" rotation="-90 0 0" width="20" height="20" color="#222"></a-plane>
-      <a-light type="ambient" color="#888"></a-light>
-      <a-light type="directional" position="2 4 -3" intensity="0.5"></a-light>
 
-      <a-entity id="rig" position="0 0 0">
-        <a-camera position="0 1.6 0">
-          <a-entity id="vr-hud" position="0 0 -1" visible="false">
-            <a-text id="vr-step-num" value="STEP 1 OF 13" position="0 0.3 0" align="center" color="#00f2fe" scale="0.4 0.4 0.4"></a-text>
-            <a-text id="vr-short-title" value="AREA SAFE" position="0 0.15 0" align="center" color="white" scale="0.7 0.7 0.7"></a-text>
-            <a-text id="vr-counter" value="0" position="0 0 0" align="center" color="#ffeb3b" scale="1.5 1.5 1.5" visible="false"></a-text>
-          </a-entity>
-        </a-camera>
-        
-        <a-entity laser-controls="hand: left" raycaster="objects: .clickable"></a-entity>
-        <a-entity laser-controls="hand: right" raycaster="objects: .clickable"></a-entity>
-      </a-entity>
+<head>
 
-      <a-entity id="vr-controls" position="0 1 -1.5" visible="false">
-        <a-box id="vr-next-btn" class="clickable" position="0.5 0 0" color="#ff4b2b" scale="0.4 0.15 0.05" animation="property: scale; to: 0.42 0.17 0.05; dir: alternate; dur: 800; loop: true">
-          <a-text value="CONTINUE ->" align="center" position="0 0 0.6" color="white" scale="1.2 3 1"></a-text>
-        </a-box>
-        
-        <a-box id="vr-start-btn" class="clickable" position="0.5 0 0" color="#00ff88" scale="0.5 0.15 0.05" visible="false">
-          <a-text value="START CPR" align="center" position="0 0 0.6" color="black" scale="1 3 1"></a-text>
-        </a-box>
-      </a-entity>
- 
-      <a-entity id="cpr-dummy" position="0 0.5 -1.5">
-        <a-entity id="group1">
-          <a-cone color="#00ff88" radius-bottom="0.2" height="0.6" position="0 0.5 0" rotation="180 0 0" animation="property: position; to: 0 0.7 0; dir: alternate; dur: 800; loop: true"></a-cone>
-        </a-entity>
-        <a-entity id="group2" visible="false">
-          <a-sphere color="#ffeb3b" radius="0.25" position="0 0.6 -0.4" animation="property: scale; to: 1.3 1.3 1.3; dir: alternate; dur: 400; loop: true"></a-sphere>
-        </a-entity>
-        <a-entity id="group3" visible="false">
-          <a-box color="#ff4b2b" position="0 0.5 -0.5" scale="0.3 0.3 0.3" animation="property: rotation; to: 0 360 0; dur: 2000; loop: true"></a-box>
-        </a-entity>
-        <a-entity id="group4" visible="false">
-          <a-torus color="#00f2fe" radius="0.2" radius-tubular="0.02" position="0 0.5 -1" rotation="90 0 0"></a-torus>
-        </a-entity>
-        <a-entity id="group5" visible="false">
-          <a-cylinder color="#ffeb3b" radius="0.15" height="0.4" position="0 0.5 -0.8" animation="property: position; to: 0 0.7 -0.8; dir: alternate; dur: 600; loop: true"></a-cylinder>
-        </a-entity>
-        <a-entity id="group6" visible="false">
-          <a-box color="#ff8800" position="0 0.4 -0.6" scale="0.4 0.4 0.4" animation="property: rotation; to: 360 360 0; dur: 3000; loop: true"></a-box>
-        </a-entity>
-        <a-entity id="group7" visible="false">
-          <a-sphere color="#00ff88" radius="0.2" position="0 0.5 -0.5" animation="property: scale; to: 1.5 1.5 1.5; dir: alternate; dur: 1000; loop: true"></a-sphere>
-        </a-entity>
-        <a-entity id="group8" visible="false">
-          <a-torus color="#ff4b2b" radius="0.25" radius-tubular="0.05" position="0 0.4 0" rotation="90 0 0"></a-torus>
-        </a-entity>
-        <a-entity id="group9" visible="false">
-          <a-cone color="#00f2fe" radius-bottom="0.25" height="0.5" position="0 0.5 0" rotation="180 0 0"></a-cone>
-        </a-entity>
-        <a-entity id="group10" visible="false">
-          <a-image id="hand-image" src="#cpr-hands" position="0 0.5 0" width="1.8" height="1.8" rotation="-90 0 0" animation="property: position; from: 0 0.5 0; to: 0 0.1 0; dur: 272.5; dir: alternate; loop: true; easing: easeInOutQuad; enabled: false"></a-image>
-          <a-ring id="cpr-ring" color="#ff4b2b" radius-inner="0.35" radius-outer="0.45" position="0 0.05 0" rotation="-90 0 0" animation="property: material.opacity; from: 1; to: 0.2; dur: 272.5; dir: alternate; loop: true"></a-ring>
-        </a-entity>
-        <a-entity id="group11" visible="false">
-          <a-torus color="#ffeb3b" radius="0.2" radius-tubular="0.02" position="0 0.5 -1" rotation="90 0 0" animation="property: rotation; to: 90 360 0; dur: 2000; loop: true"></a-torus>
-        </a-entity>
-        <a-entity id="group12" visible="false">
-          <a-sphere color="#ff4b2b" radius="0.15" position="0 0.6 -1" animation="property: scale; to: 1.2 1.2 1.2; dir: alternate; dur: 300; loop: true"></a-sphere>
-        </a-entity>
-        <a-entity id="group13" visible="false">
-          <a-sphere color="#00f2fe" radius="0.3" position="0 0.6 -1" opacity="0.5" animation="property: scale; from: 1 1 1; to: 1.5 1.5 1.5; dur: 1000; loop: true; dir: alternate"></a-sphere>
-        </a-entity>
-      </a-entity>
-    </a-scene>
- 
-    <script>
-      let currentStep = 1;
-      let count = 0;
-      let timer = null;
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const synth = window.speechSynthesis;
- 
-      const shortTitles = [
-        "AREA SAFE", "CALL OUT", "TAP SHOULDER", "HAND ON FOREHEAD",
-        "LIFT CHIN", "CHEST MOVEMENT", "CHECK BREATHING", "HAND ON CHEST",
-        "HAND ON TOP", "30 COMPRESSIONS", "TILT HEAD", "CLOSE NOSE", "2 RESCUE BREATHS"
-      ];
+<meta charset="UTF-8">
 
-      const voiceInstructions = [
-        "Make sure the area is safe!", "Call out loudly: Are you okay?",
-        "Tap the patient's shoulder gently!", "Place your hand on the forehead",
-        "Lift the chin gently", "Look for chest movement",
-        "Check for breathing for 10 seconds", "Place the heel of your hand on chest",
-        "Place your other hand on top", "Push 30 times, 5 centimeters deep, at 100 per minute.",
-        "Tilt the head back", "Close the nose",
-        "Give 2 rescue breaths, 1 second each, until the chest rises"
-      ];
- 
-      function beep(freq, duration) {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        osc.start(); osc.stop(audioCtx.currentTime + duration);
-      }
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
 
-      function speakText(text) {
-        synth.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'en-US'; utterance.rate = 1.0;
-        synth.speak(utterance);
-      }
- 
-      function initExperience() {
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        speakText(voiceInstructions[0]);
-        
-        document.getElementById('landing-page').style.opacity = '0';
-        setTimeout(() => {
-          document.getElementById('landing-page').style.display = 'none';
-          // إظهار واجهة الـ VR والأزرار
-          document.getElementById('vr-hud').setAttribute('visible', 'true');
-          document.getElementById('vr-controls').setAttribute('visible', 'true');
-        }, 800);
-      }
- 
-      // ربط أزرار الـ 3D بالفانكشنز
-      document.querySelector('#vr-next-btn').addEventListener('click', nextStep);
-      document.querySelector('#vr-start-btn').addEventListener('click', startCPR);
+<title>CPR AR Trainer</title>
 
-      function nextStep() {
-        clearInterval(timer);
-        document.getElementById('vr-counter').setAttribute('visible', 'false');
-        document.getElementById('vr-next-btn').setAttribute('visible', 'true');
-        document.getElementById('vr-start-btn').setAttribute('visible', 'false');
- 
-        if (currentStep < 13) {
-          document.getElementById('group' + currentStep).setAttribute('visible', 'false');
-          currentStep++;
-          document.getElementById('group' + currentStep).setAttribute('visible', 'true');
- 
-          // تحديث نصوص الـ VR
-          document.getElementById('vr-step-num').setAttribute('value', `STEP ${currentStep} OF 13`);
-          document.getElementById('vr-short-title').setAttribute('value', shortTitles[currentStep - 1]);
-          speakText(voiceInstructions[currentStep - 1]);
-          
-          if (currentStep === 13) {
-            document.querySelector('#vr-next-btn a-text').setAttribute('value', 'FINISH');
-          }
-          
-          if (currentStep === 10) {
-            document.getElementById('vr-next-btn').setAttribute('visible', 'false');
-            document.getElementById('vr-start-btn').setAttribute('visible', 'true');
-          }
-        } else {
-          showFinishPage();
-        }
-      }
- 
-      function startCPR() {
-        count = 0;
-        const handImg = document.getElementById('hand-image');
-        const vrCounter = document.getElementById('vr-counter');
-        
-        vrCounter.setAttribute('visible', 'true');
-        vrCounter.setAttribute('value', count);
-        document.getElementById('vr-start-btn').setAttribute('visible', 'false');
-        
-        handImg.setAttribute('animation', 'enabled: true');
-        
-        timer = setInterval(() => {
-          count++;
-          if (count <= 30) {
-            vrCounter.setAttribute('value', count);
-            beep(950, 0.08); 
-          } else {
-            vrCounter.setAttribute('value', 'DONE!');
-            handImg.setAttribute('animation', 'enabled: false');
-            clearInterval(timer);
-            document.getElementById('vr-next-btn').setAttribute('visible', 'true');
-            speakText("Compressions done. Proceed to next step.");
-          }
-        }, 545);
-      }
- 
-      function showFinishPage() {
-        // إخفاء الـ VR للخروج و عرض شاشة النهاية
-        const scene = document.querySelector('a-scene');
-        if(scene.is('vr-mode')) scene.exitVR();
-        
-        const fp = document.getElementById('finish-page');
-        fp.style.display = 'flex';
-        setTimeout(() => { fp.style.opacity = '1'; }, 100);
-        speakText("Mission Complete. Well done!");
-      }
-    </script>
-  </body>
+<script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+
+<script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+
+
+<style>
+
+:root{
+--green:#00ff88;
+--red:#ff4b2b;
+--blue:#0072ff;
+--cyan:#00f2fe;
+}
+
+body{
+margin:0;
+overflow:hidden;
+font-family:Arial,sans-serif;
+background:black;
+}
+
+
+.overlay-page{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+display:flex;
+align-items:center;
+justify-content:center;
+background:linear-gradient(135deg,#4facfe,#00f2fe);
+z-index:3000;
+}
+
+
+.card{
+width:85%;
+max-width:450px;
+padding:35px;
+background:white;
+border-radius:30px;
+text-align:center;
+}
+
+
+.card h1{
+color:#1e3c72;
+}
+
+
+.instructions{
+background:#f2f5f5;
+padding:20px;
+border-radius:20px;
+text-align:left;
+line-height:1.7;
+}
+
+
+.main-btn{
+margin-top:20px;
+padding:18px 45px;
+border:0;
+border-radius:50px;
+background:linear-gradient(135deg,#ff416c,#ff4b2b);
+color:white;
+font-size:18px;
+font-weight:bold;
+}
+
+
+
+#sos-btn{
+
+display:none;
+position:fixed;
+top:20px;
+right:20px;
+z-index:5000;
+
+background:#ff4b2b;
+color:white;
+
+border:0;
+padding:12px 20px;
+border-radius:15px;
+font-weight:bold;
+
+}
+
+
+
+
+#ar-ui{
+
+display:none;
+
+position:fixed;
+width:100%;
+height:100%;
+
+z-index:1000;
+
+pointer-events:none;
+
+}
+
+
+
+
+.status{
+
+position:absolute;
+top:20px;
+left:20px;
+
+background:rgba(0,0,0,.7);
+color:white;
+
+padding:10px;
+border-radius:20px;
+
+}
+
+
+
+
+.progress{
+
+position:absolute;
+top:60px;
+
+left:10%;
+width:80%;
+
+height:10px;
+
+background:rgba(255,255,255,.3);
+
+border-radius:20px;
+
+}
+
+
+#progress-bar{
+
+height:100%;
+width:7%;
+
+background:#00ff88;
+
+border-radius:20px;
+
+}
+
+
+
+
+
+.panel{
+
+position:absolute;
+
+bottom:20px;
+
+left:5%;
+
+width:90%;
+
+pointer-events:auto;
+
+}
+
+
+
+
+.info{
+
+background:rgba(0,0,0,.85);
+
+color:white;
+
+padding:20px;
+
+border-radius:25px;
+
+text-align:center;
+
+}
+
+
+
+#step-number{
+
+color:#00f2fe;
+
+font-weight:bold;
+
+}
+
+
+#step-title{
+
+font-size:25px;
+
+font-weight:bold;
+
+}
+
+
+#voice-subtitle{
+
+color:#ddd;
+
+}
+
+
+
+#feedback{
+
+font-weight:bold;
+
+margin-top:10px;
+
+}
+
+
+
+#counter{
+
+display:none;
+
+font-size:70px;
+
+color:#ffeb3b;
+
+text-align:center;
+
+font-weight:bold;
+
+}
+
+
+
+
+button{
+
+cursor:pointer;
+
+}
+
+
+
+.controls{
+
+display:flex;
+
+gap:10px;
+
+margin-top:10px;
+
+}
+
+
+
+.controls button{
+
+padding:18px;
+
+border-radius:40px;
+
+border:0;
+
+font-weight:bold;
+
+}
+
+
+.reset{
+
+flex:1;
+background:#333;
+color:white;
+
+}
+
+
+.next{
+
+flex:3;
+background:#ff4b2b;
+color:white;
+
+}
+
+
+#start-cpr{
+
+display:none;
+
+flex:3;
+
+background:#00ff88;
+
+}
+
+
+
+
+
+.repeat{
+
+width:100%;
+
+margin-top:10px;
+
+background:#0072ff;
+
+color:white;
+
+padding:15px;
+
+border:0;
+
+border-radius:30px;
+
+}
+
+
+
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<div id="landing-page"
+class="overlay-page">
+
+
+<div class="card">
+
+
+<img src="HSA.png" width="60">
+
+
+<h1>
+CPR AR TRAINER
+</h1>
+
+
+<p>
+Augmented Reality CPR Training
+</p>
+
+
+
+<div class="instructions">
+
+
+<p>
+🔊 Enable sound
+</p>
+
+
+<p>
+📷 Scan marker
+</p>
+
+
+<p>
+🫀 Follow AR instructions
+</p>
+
+
+<p>
+🟢 Maintain rhythm
+</p>
+
+
+</div>
+
+
+
+<button class="main-btn"
+onclick="initExperience()">
+
+START TRAINING
+
+</button>
+
+
+
+</div>
+
+</div>
+<div id="finish-page"
+class="overlay-page"
+style="display:none;opacity:0">
+
+
+<div class="card">
+
+
+<h1 style="color:#27ae60">
+TRAINING COMPLETE ✓
+</h1>
+
+
+<p>
+CPR cycle completed successfully
+</p>
+
+
+<button class="main-btn"
+onclick="location.reload()">
+
+RESTART
+
+</button>
+
+
+</div>
+
+</div>
+
+
+
+
+
+<button id="sos-btn"
+onclick="window.location.href='tel:112'">
+
+CALL 112 📞
+
+</button>
+
+
+
+
+
+
+<div id="ar-ui">
+
+
+<div id="marker-status"
+class="status">
+
+📷 Searching marker...
+
+</div>
+
+
+
+
+<div class="progress">
+
+<div id="progress-bar">
+
+</div>
+
+</div>
+
+
+
+
+
+<div class="panel">
+
+
+<div id="counter">
+0
+</div>
+
+
+
+
+<div class="info">
+
+
+<div id="step-number">
+STEP 1 OF 13
+</div>
+
+
+
+<div id="step-title">
+AREA SAFE
+</div>
+
+
+
+<div id="voice-subtitle">
+Make sure the area is safe.
+</div>
+
+
+
+<div id="feedback">
+
+</div>
+
+
+
+</div>
+
+
+
+
+
+
+<button class="repeat"
+onclick="repeatInstruction()">
+
+🔊 Repeat instruction
+
+</button>
+
+
+
+
+
+
+
+<div class="controls">
+
+
+<button class="reset"
+onclick="location.reload()">
+
+RESET
+
+</button>
+
+
+
+
+<button id="start-cpr"
+onclick="startCPR()">
+
+START CPR
+
+</button>
+
+
+
+
+
+<button id="next-btn"
+class="next"
+onclick="nextStep()">
+
+CONTINUE →
+
+</button>
+
+
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+
+
+
+
+
+<a-scene
+
+embedded
+
+arjs="
+sourceType:webcam;
+debugUIEnabled:false;
+"
+
+vr-mode-ui="enabled:false">
+
+
+
+
+
+<a-assets>
+
+<img id="hands"
+src="hands.png">
+
+</a-assets>
+
+
+
+
+
+
+
+<a-marker
+
+preset="hiro"
+
+smooth="true"
+
+smoothCount="10"
+
+smoothTolerance="0.02"
+
+smoothThreshold="5">
+
+
+
+
+
+<a-text
+
+id="ar-title"
+
+value="AREA SAFE"
+
+align="center"
+
+color="#00ff88"
+
+position="0 2 -1"
+
+scale="1 1 1">
+
+</a-text>
+
+
+
+
+
+
+
+<a-cone
+
+id="arrow"
+
+color="#00ff88"
+
+radius-bottom="0.15"
+
+height="0.5"
+
+position="0 1.5 0"
+
+rotation="180 0 0"
+
+
+animation="
+
+property:position;
+
+to:0 1.8 0;
+
+dir:alternate;
+
+dur:800;
+
+loop:true">
+
+</a-cone>
+
+
+
+
+
+
+
+<a-ring
+
+id="chest-target"
+
+color="#ff4b2b"
+
+radius-inner="0.35"
+
+radius-outer="0.45"
+
+position="0 1.1 0"
+
+rotation="-90 0 0">
+
+</a-ring>
+
+
+
+
+
+
+
+<a-image
+
+id="hands-guide"
+
+src="#hands"
+
+position="0 1.4 0"
+
+width="1.2"
+
+height="1.2"
+
+rotation="-90 0 0"
+
+visible="false">
+
+</a-image>
+
+
+
+
+
+
+
+
+<a-ring
+
+id="feedback-ring"
+
+color="#ff0000"
+
+radius-inner="0.25"
+
+radius-outer="0.35"
+
+position="0 1.05 0"
+
+rotation="-90 0 0">
+
+</a-ring>
+
+
+
+
+
+
+
+<a-text
+
+id="compression-status"
+
+value="READY"
+
+align="center"
+
+color="#ffffff"
+
+position="0 1.8 0">
+
+</a-text>
+
+
+
+
+
+
+<a-entity id="group1"></a-entity>
+
+<a-entity id="group2" visible="false"></a-entity>
+
+<a-entity id="group3" visible="false"></a-entity>
+
+<a-entity id="group4" visible="false"></a-entity>
+
+<a-entity id="group5" visible="false"></a-entity>
+
+<a-entity id="group6" visible="false"></a-entity>
+
+<a-entity id="group7" visible="false"></a-entity>
+
+<a-entity id="group8" visible="false"></a-entity>
+
+<a-entity id="group9" visible="false"></a-entity>
+
+<a-entity id="group10" visible="false"></a-entity>
+
+<a-entity id="group11" visible="false"></a-entity>
+
+<a-entity id="group12" visible="false"></a-entity>
+
+<a-entity id="group13" visible="false"></a-entity>
+
+
+
+
+
+
+</a-marker>
+
+
+
+
+
+
+<a-entity camera></a-entity>
+
+
+
+</a-scene>
+<script>
+
+
+let currentStep=1;
+
+let count=0;
+
+let timer=null;
+
+let isMarkerFound=false;
+
+
+const synth=window.speechSynthesis;
+
+
+const audioCtx=
+new(window.AudioContext||
+window.webkitAudioContext)();
+
+
+
+
+const titles=[
+
+"AREA SAFE",
+"CALL OUT",
+"TAP SHOULDER",
+"HAND ON FOREHEAD",
+"LIFT CHIN",
+"CHECK CHEST MOVEMENT",
+"CHECK BREATHING",
+"HAND ON CHEST",
+"HAND ON TOP",
+"30 COMPRESSIONS",
+"TILT HEAD",
+"CLOSE NOSE",
+"TWO RESCUE BREATHS"
+
+];
+
+
+
+const instructions=[
+
+"Make sure the area is safe.",
+
+"Call out loudly: Are you okay?",
+
+"Tap the patient's shoulder gently.",
+
+"Place your hand on the forehead.",
+
+"Lift the chin gently.",
+
+"Look for chest movement.",
+
+"Check breathing for ten seconds.",
+
+"Place the heel of your hand on the chest.",
+
+"Place your other hand on top.",
+
+"Perform thirty chest compressions at a rate of one hundred to one hundred twenty per minute.",
+
+"Tilt the head backwards.",
+
+"Close the nose.",
+
+"Give two rescue breaths."
+
+];
+
+
+
+
+
+
+
+window.addEventListener(
+"DOMContentLoaded",
+()=>{
+
+
+let marker=
+document.querySelector("a-marker");
+
+
+
+marker.addEventListener(
+"markerFound",
+()=>{
+
+
+isMarkerFound=true;
+
+
+document.getElementById(
+"marker-status"
+).innerHTML=
+"🟢 Marker detected";
+
+
+});
+
+
+
+marker.addEventListener(
+"markerLost",
+()=>{
+
+
+isMarkerFound=false;
+
+
+document.getElementById(
+"marker-status"
+).innerHTML=
+"🔴 Marker lost";
+
+
+});
+
+
+});
+
+
+
+
+
+
+
+function initExperience(){
+
+
+
+if(audioCtx.state==="suspended")
+audioCtx.resume();
+
+
+
+document.getElementById(
+"landing-page"
+).style.display="none";
+
+
+
+document.getElementById(
+"ar-ui"
+).style.display="block";
+
+
+
+document.getElementById(
+"sos-btn"
+).style.display="block";
+
+
+
+speak(
+instructions[0]
+);
+
+
+
+updateAR();
+
+
+}
+
+
+
+
+
+
+
+function speak(text){
+
+
+
+synth.cancel();
+
+
+
+document.getElementById(
+"voice-subtitle"
+).innerText=text;
+
+
+
+let speech=
+new SpeechSynthesisUtterance(text);
+
+
+
+speech.lang="en-US";
+
+
+speech.rate=1;
+
+
+
+speech.onstart=()=>{
+
+
+document.getElementById(
+"next-btn"
+).disabled=true;
+
+
+};
+
+
+
+speech.onend=()=>{
+
+
+document.getElementById(
+"next-btn"
+).disabled=false;
+
+
+};
+
+
+
+synth.speak(speech);
+
+
+
+}
+
+
+
+
+
+
+function repeatInstruction(){
+
+
+speak(
+instructions[currentStep-1]
+);
+
+
+}
+
+
+
+
+
+
+
+
+function nextStep(){
+
+
+
+if(currentStep>=13){
+
+finishTraining();
+
+return;
+
+}
+
+
+
+
+document.getElementById(
+"group"+currentStep
+)
+.setAttribute(
+"visible",
+"false"
+);
+
+
+
+currentStep++;
+
+
+
+document.getElementById(
+"group"+currentStep
+)
+.setAttribute(
+"visible",
+"true"
+);
+
+
+
+updateAR();
+
+
+
+speak(
+instructions[currentStep-1]
+);
+
+
+
+
+
+if(currentStep===10){
+
+
+document.getElementById(
+"next-btn"
+)
+.style.display="none";
+
+
+document.getElementById(
+"start-cpr"
+)
+.style.display="block";
+
+
+}
+
+
+
+}
+
+
+
+
+
+
+
+function updateAR(){
+
+
+
+document.getElementById(
+"step-number"
+).innerText=
+"STEP "+currentStep+" OF 13";
+
+
+
+document.getElementById(
+"step-title"
+).innerText=
+titles[currentStep-1];
+
+
+
+document.getElementById(
+"progress-bar"
+).style.width=
+(currentStep/13*100)+"%";
+
+
+
+document.getElementById(
+"ar-title"
+)
+.setAttribute(
+"value",
+titles[currentStep-1]
+);
+
+
+
+
+if(currentStep===10){
+
+
+document.getElementById(
+"hands-guide"
+)
+.setAttribute(
+"visible",
+"true"
+);
+
+
+
+document.getElementById(
+"arrow"
+)
+.setAttribute(
+"color",
+"#ff4b2b"
+);
+
+
+
+}
+
+
+}
+
+
+
+
+
+
+function startCPR(){
+
+
+
+count=0;
+
+
+
+document.getElementById(
+"counter"
+).style.display="block";
+
+
+
+document.getElementById(
+"start-cpr"
+)
+.style.display="none";
+
+
+
+timer=setInterval(()=>{
+
+
+count++;
+
+
+document.getElementById(
+"counter"
+).innerText=count;
+
+
+
+document.getElementById(
+"compression-status"
+)
+.setAttribute(
+"value",
+"Compression "+count+"/30"
+);
+
+
+
+document.getElementById(
+"feedback-ring"
+)
+.setAttribute(
+"color",
+"#00ff88"
+);
+
+
+
+beep();
+
+
+
+if(count>=30){
+
+
+
+clearInterval(timer);
+
+
+
+document.getElementById(
+"counter"
+).innerText="DONE ✓";
+
+
+
+document.getElementById(
+"compression-status"
+)
+.setAttribute(
+"value",
+"COMPLETED"
+);
+
+
+
+document.getElementById(
+"next-btn"
+)
+.style.display="block";
+
+
+
+speak(
+"Compression completed. Continue."
+);
+
+
+
+}
+
+
+
+},600);
+
+
+
+}
+
+
+
+
+
+
+
+function beep(){
+
+
+let osc=
+audioCtx.createOscillator();
+
+
+let gain=
+audioCtx.createGain();
+
+
+
+osc.connect(gain);
+
+gain.connect(
+audioCtx.destination
+);
+
+
+
+osc.frequency.value=900;
+
+
+gain.gain.value=.1;
+
+
+osc.start();
+
+
+osc.stop(
+audioCtx.currentTime+.08
+);
+
+
+
+}
+
+
+
+
+
+
+
+function finishTraining(){
+
+
+
+document.getElementById(
+"ar-ui"
+).style.display="none";
+
+
+
+document.getElementById(
+"sos-btn"
+).style.display="none";
+
+
+
+let page=
+document.getElementById(
+"finish-page"
+);
+
+
+
+page.style.display="flex";
+
+
+setTimeout(()=>{
+
+page.style.opacity="1";
+
+},100);
+
+
+
+speak(
+"Training complete. Well done."
+);
+
+
+
+}
+
+
+
+</script>
+
+
+</body>
+
 </html>
